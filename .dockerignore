@@ -1,0 +1,77 @@
+# Root .dockerignore
+# Prevents sensitive files from being copied during Docker build
+
+# Environment files (CRITICAL: Never include in builds)
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose*.yml
+.dockerignore
+**/Dockerfile
+**/.dockerignore
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+node_modules/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Documentation (optional - reduce image size)
+# *.md
+# docs/

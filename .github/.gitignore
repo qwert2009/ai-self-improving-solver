@@ -1,0 +1,6 @@
+# GitHub generated files
+*.sarif
+trivy-results.sarif
+
+# Trivy database
+trivy-db

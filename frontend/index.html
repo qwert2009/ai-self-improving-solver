@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Project - AI Self-Improving System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --sidebar-bg: #1a1a2e;
+            --sidebar-hover: #16213e;
+            --accent-color: #0f3460;
+        }
+        .sidebar { min-height: 100vh; background: var(--sidebar-bg); color: white; }
+        .nav-link { color: rgba(255,255,255,0.8); cursor: pointer; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { color: white; background: var(--sidebar-hover); }
+        .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+        .loading { text-align: center; padding: 50px; }
+        .problem-card { cursor: pointer; transition: all 0.2s; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .problem-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.15); transform: translateY(-3px); }
+        .badge-mechanics { background: #0d6efd; }
+        .badge-circuits { background: #ffc107; color: #000; }
+        .badge-calculus { background: #0dcaf0; color: #000; }
+        .badge-algebra { background: #198754; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .status-online { background: #198754; box-shadow: 0 0 10px #198754; }
+        .status-offline { background: #dc3545; }
+        .solution-step { padding: 10px; margin: 5px 0; background: #f8f9fa; border-left: 3px solid #0d6efd; }
+        .spinner-container { display: flex; justify-content: center; align-items: center; padding: 40px; }
+        .alert-fixed { position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; }
+        .main-content { background: #f8f9fa; min-height: 100vh; }
+        .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card-header { background: white; border-bottom: 2px solid #f0f0f0; font-weight: 600; }
+        .btn-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; }
+        .btn-gradient:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; }
+    </style>
+</head>
+<body>
+    <!-- Alert Container -->
+    <div id="alertContainer"></div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 sidebar p-3">
+                <h4 class="mb-4">🧠 AI System</h4>
+                <nav class="nav flex-column">
+                    <a class="nav-link active" onclick="showPage('dashboard')"><span class="status-indicator" id="statusDot"></span>Dashboard</a>
+                    <a class="nav-link" onclick="showPage('problems')">📚 Problems</a>
+                    <a class="nav-link" onclick="showPage('solver')">🧮 Solver</a>
+                    <a class="nav-link" onclick="showPage('experiments')">🔬 Experiments</a>
+                    <a class="nav-link" onclick="showPage('analysis')">📈 Analysis</a>
+                </nav>
+                <hr class="my-4">
+                <div class="px-2">
+                    <small id="systemStatus" class="text-muted">Checking connection...</small>
+                    <div id="serverInfo" class="mt-2" style="font-size: 11px; color: rgba(255,255,255,0.6);"></div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10 main-content p-4">
+                <!-- Dashboard -->
+                <div id="dashboardPage">
+                    <h2 class="mb-4">📊 Dashboard</h2>
+                    <div class="row mb-4" id="statsCards">
+                        <div class="col-md-3">
+                            <div class="card stat-card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="opacity-75">Problems</h5>
+                                    <h2 id="totalProblems" class="display-6">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="opacity-75">Baseline Solutions</h5>
+                                    <h2 id="totalBaseline" class="display-6">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="opacity-75">Improved Solutions</h5>
+                                    <h2 id="totalImproved" class="display-6">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card stat-card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h5 class="opacity-75">Experiments</h5>
+                                    <h2 id="totalExperiments" class="display-6">-</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">📈 Accuracy Comparison</div>
+                                <div class="card-body">
+                                    <canvas id="accuracyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">🔬 Recent Experiments</div>
+                                <div class="card-body" id="recentExperiments">
+                                    <div class="text-center text-muted py-4">
+                                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                                        <p class="mt-2">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problems Page -->
+                <div id="problemsPage" style="display:none;">
+                    <h2 class="mb-4">📚 Engineering Problems</h2>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Filter by Domain</label>
+                                    <select class="form-select" id="domainFilter" onchange="loadProblems()">
+                                        <option value="">All Domains</option>
+                                        <option value="mechanics">Mechanics</option>
+                                        <option value="circuits">Circuits</option>
+                                        <option value="calculus">Calculus</option>
+                                        <option value="algebra">Algebra</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Filter by Difficulty</label>
+                                    <select class="form-select" id="difficultyFilter" onchange="loadProblems()">
+                                        <option value="">All Difficulties</option>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" onclick="loadProblems()">🔄 Refresh</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" id="problemsList">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Loading problems...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solver Page -->
+                <div id="solverPage" style="display:none;">
+                    <h2 class="mb-4">🧮 Problem Solver</h2>
+                    <div class="card mb-4">
+                        <div class="card-header">Enter Problem</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Problem Statement</label>
+                                <textarea class="form-control" id="problemText" rows="4" placeholder="Enter an engineering problem, e.g., 'A car accelerates from rest to 20 m/s in 5 seconds. What is its acceleration?'"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Expected Answer (optional, for validation)</label>
+                                <input type="number" class="form-control" id="expectedAnswer" step="any" placeholder="Enter expected numerical answer">
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-primary" id="btnBaseline" onclick="solve('baseline')">⚡ Baseline Solver</button>
+                                <button class="btn btn-success" id="btnImproved" onclick="solve('improved')">🧠 Self-Improving Solver</button>
+                            </div>
+                            <hr>
+                            <div>
+                                <strong class="me-2">Quick Examples:</strong>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadExample(1)">Acceleration</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadExample(2)">Circuit</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadExample(3)">Derivative</button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadExample(4)">Force</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="solverResult"></div>
+                </div>
+
+                <!-- Experiments Page -->
+                <div id="experimentsPage" style="display:none;">
+                    <h2 class="mb-4">🔬 Experiments</h2>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">Experiment Name</label>
+                                    <input type="text" class="form-control" id="experimentName" placeholder="My Experiment">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Domain (optional)</label>
+                                    <select class="form-select" id="experimentDomain">
+                                        <option value="">All</option>
+                                        <option value="mechanics">Mechanics</option>
+                                        <option value="circuits">Circuits</option>
+                                        <option value="calculus">Calculus</option>
+                                        <option value="algebra">Algebra</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Difficulty (optional)</label>
+                                    <select class="form-select" id="experimentDifficulty">
+                                        <option value="">All</option>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100" onclick="runExperiment()">▶ Run</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">Experiment History</div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Baseline</th>
+                                            <th>Improved</th>
+                                            <th>Improvement</th>
+                                            <th>Progress</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="experimentsTable">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">
+                                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                                <p class="mt-2">Loading experiments...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Page -->
+                <div id="analysisPage" style="display:none;">
+                    <h2 class="mb-4">📈 Research Analysis</h2>
+                    <div id="analysisContent">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Loading analysis...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem Modal -->
+    <div class="modal fade" id="problemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="problemModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="problemModalBody"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" onclick="solveCurrentProblem('baseline')">⚡ Baseline</button>
+                    <button class="btn btn-success" onclick="solveCurrentProblem('improved')">🧠 Self-Improving</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentProblem = null;
+        let accuracyChartInstance = null;
+        let isOnline = false;
+
+        // Utility: Show alerts
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-fixed shadow`;
+            alertDiv.innerHTML = `<span>${message}</span><button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>`;
+            document.getElementById('alertContainer').appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            loadStats();
+            setInterval(checkHealth, 30000);
+            setInterval(loadStats, 60000);
+        });
+
+        // Navigation
+        function showPage(page) {
+            ['dashboard', 'problems', 'solver', 'experiments', 'analysis'].forEach(p => {
+                document.getElementById(p + 'Page').style.display = p === page ? 'block' : 'none';
+            });
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            event.target.closest('.nav-link').classList.add('active');
+
+            if (page === 'problems') loadProblems();
+            if (page === 'experiments') loadExperiments();
+            if (page === 'analysis') loadAnalysis();
+        }
+
+        // Health Check
+        async function checkHealth() {
+            try {
+                const res = await axios.get(`${API_BASE}/health`, { timeout: 5000 });
+                isOnline = true;
+                const statusClass = res.data.status === 'healthy' ? 'status-online' : 'status-offline';
+                const statusIcon = res.data.status === 'healthy' ? '✅' : '⚠️';
+                const statusText = res.data.status === 'healthy' ? 'Online' : 'Degraded';
+                
+                document.getElementById('systemStatus').innerHTML = `<span class="status-indicator ${statusClass}"></span>${statusIcon} ${statusText}`;
+                document.getElementById('statusDot').className = `status-indicator ${statusClass}`;
+                
+                let serverInfo = `Debug: ${res.data.debug ? 'On' : 'Off'}`;
+                if (res.data.api_configured) {
+                    serverInfo += ' | API: ✓';
+                } else if (res.data.issues && res.data.issues.length > 0) {
+                    serverInfo += ' | API: ✗ (check .env)';
+                }
+                document.getElementById('serverInfo').textContent = serverInfo;
+                
+                // Show warning if API not configured
+                if (!res.data.api_configured && res.data.issues) {
+                    showAlert('API keys not configured. Check backend .env file: ' + res.data.issues.join(', '), 'warning');
+                }
+            } catch (e) {
+                isOnline = false;
+                document.getElementById('systemStatus').innerHTML = '<span class="status-indicator status-offline"></span>❌ Offline';
+                document.getElementById('statusDot').className = 'status-indicator status-offline';
+                document.getElementById('serverInfo').textContent = 'Server not responding';
+                if (e.code === 'ERR_NETWORK') {
+                    showAlert('Cannot connect to backend server. Make sure it\'s running on port 8000.', 'danger');
+                }
+            }
+        }
+
+        // Load Stats
+        async function loadStats() {
+            if (!isOnline) return;
+            try {
+                const res = await axios.get(`${API_BASE}/api/stats`, { timeout: 10000 });
+                const data = res.data;
+                
+                document.getElementById('totalProblems').textContent = data.total_problems || 32;
+                document.getElementById('totalBaseline').textContent = data.total_baseline_solutions || 0;
+                document.getElementById('totalImproved').textContent = data.total_improved_solutions || 0;
+                document.getElementById('totalExperiments').textContent = data.total_experiments || 0;
+
+                // Recent experiments
+                if (data.recent_experiments && data.recent_experiments.length > 0) {
+                    document.getElementById('recentExperiments').innerHTML = data.recent_experiments.map(e =>
+                        `<div class="mb-3 p-2 border-bottom">
+                            <div class="d-flex justify-content-between">
+                                <strong>${e.name}</strong>
+                                <span class="badge bg-${e.status === 'completed' ? 'success' : 'info'}">${e.status}</span>
+                            </div>
+                            <small class="text-muted">
+                                Baseline: ${(e.baseline_accuracy * 100).toFixed(1)}% | 
+                                Improved: ${(e.improved_accuracy * 100).toFixed(1)}%
+                            </small>
+                        </div>`
+                    ).join('');
+                } else {
+                    document.getElementById('recentExperiments').innerHTML = '<p class="text-muted text-center py-3">No experiments yet. Run one from the Experiments page!</p>';
+                }
+
+                updateAccuracyChart(data);
+            } catch (e) {
+                console.error('Error loading stats:', e);
+            }
+        }
+
+        function updateAccuracyChart(stats) {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            if (accuracyChartInstance) accuracyChartInstance.destroy();
+
+            // Get comparison data if available
+            let baselineAcc = 0;
+            let improvedAcc = 0;
+            
+            if (stats.recent_experiments && stats.recent_experiments.length > 0) {
+                const completed = stats.recent_experiments.filter(e => e.status === 'completed');
+                if (completed.length > 0) {
+                    baselineAcc = completed.reduce((sum, e) => sum + (e.baseline_accuracy || 0), 0) / completed.length * 100;
+                    improvedAcc = completed.reduce((sum, e) => sum + (e.improved_accuracy || 0), 0) / completed.length * 100;
+                }
+            }
+
+            accuracyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Baseline', 'Self-Improving'],
+                    datasets: [{
+                        label: 'Accuracy (%)',
+                        data: [baselineAcc, improvedAcc],
+                        backgroundColor: ['#667eea', '#198754'],
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Load Problems
+        async function loadProblems() {
+            const domain = document.getElementById('domainFilter').value;
+            const difficulty = document.getElementById('difficultyFilter').value;
+
+            try {
+                let url = `${API_BASE}/api/problems`;
+                const params = new URLSearchParams();
+                if (domain) params.append('domain', domain);
+                if (difficulty) params.append('difficulty', difficulty);
+                if (params.toString()) url += '?' + params.toString();
+
+                const res = await axios.get(url, { timeout: 10000 });
+                const problems = res.data;
+                
+                if (problems.length === 0) {
+                    document.getElementById('problemsList').innerHTML = '<div class="col-12 text-center py-5 text-muted">No problems found matching your criteria.</div>';
+                    return;
+                }
+
+                document.getElementById('problemsList').innerHTML = problems.map(p => `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card problem-card h-100" onclick="viewProblem(${p.id})">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge badge-${p.domain}">${p.domain}</span>
+                                    <span class="badge bg-${p.difficulty === 'easy' ? 'success' : p.difficulty === 'medium' ? 'warning text-dark' : 'danger'}">${p.difficulty}</span>
+                                </div>
+                                <h6 class="card-title">${p.title}</h6>
+                                <p class="card-text text-muted small">${p.description.substring(0, 100)}${p.description.length > 100 ? '...' : ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Error loading problems:', e);
+                document.getElementById('problemsList').innerHTML = '<div class="col-12 text-center py-5"><div class="alert alert-danger">Failed to load problems. Make sure the server is running.</div></div>';
+            }
+        }
+
+        // View Problem
+        async function viewProblem(id) {
+            try {
+                const res = await axios.get(`${API_BASE}/api/problems/${id}`, { timeout: 10000 });
+                currentProblem = res.data;
+                document.getElementById('problemModalTitle').textContent = res.data.title;
+                
+                let html = `<p class="lead">${res.data.description}</p>`;
+                
+                if (res.data.known_variables && res.data.known_variables.length > 0) {
+                    html += `<h6>Known Variables:</h6>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light"><tr><th>Name</th><th>Value</th><th>Unit</th></tr></thead>
+                            <tbody>
+                                ${res.data.known_variables.map(v => `<tr><td>${v.name}</td><td>${v.value}</td><td>${v.unit}</td></tr>`).join('')}
+                            </tbody>
+                        </table>`;
+                }
+                
+                if (res.data.expected_answer !== null && res.data.expected_answer !== undefined) {
+                    html += `<div class="alert alert-info"><strong>Expected Answer:</strong> ${res.data.expected_answer} ${res.data.expected_unit || ''}</div>`;
+                }
+                
+                document.getElementById('problemModalBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('problemModal')).show();
+            } catch (e) {
+                console.error('Error loading problem:', e);
+                showAlert('Failed to load problem details', 'danger');
+            }
+        }
+
+        // Solve Problem
+        async function solve(method) {
+            const problemText = document.getElementById('problemText').value.trim();
+            const expectedAnswer = document.getElementById('expectedAnswer').value;
+
+            if (!problemText) { 
+                showAlert('Please enter a problem statement', 'warning'); 
+                return; 
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Solving...';
+
+            try {
+                const params = new URLSearchParams();
+                params.append('problem_text', problemText);
+                if (expectedAnswer) params.append('expected_answer', expectedAnswer);
+
+                const url = method === 'baseline' ? '/api/solve/baseline' : '/api/solve/improved';
+                const res = await axios.post(`${API_BASE}${url}`, null, { 
+                    params,
+                    timeout: 120000  // 2 minute timeout for LLM calls
+                });
+
+                displaySolution(res.data, method);
+                showAlert('Solution generated successfully!', 'success');
+            } catch (e) {
+                console.error('Error solving:', e);
+                let errorMsg = 'Failed to solve problem. ';
+                if (e.code === 'ECONNABORTED') {
+                    errorMsg += 'Request timed out. The LLM may be busy.';
+                } else if (e.response) {
+                    errorMsg += `Server error: ${e.response.data.detail || e.response.statusText}`;
+                } else {
+                    errorMsg += 'Check your connection and try again.';
+                }
+                document.getElementById('solverResult').innerHTML = `<div class="alert alert-danger">${errorMsg}</div>`;
+                showAlert('Solving failed', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function solveCurrentProblem(method) {
+            if (!currentProblem) return;
+
+            bootstrap.Modal.getInstance(document.getElementById('problemModal')).hide();
+            document.getElementById('problemText').value = currentProblem.description;
+            document.getElementById('expectedAnswer').value = currentProblem.expected_answer || '';
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+
+            try {
+                const params = new URLSearchParams();
+                params.append('problem_id', currentProblem.id);
+                params.append('use_improved', method === 'improved');
+
+                const res = await axios.post(`${API_BASE}/api/solve/custom`, null, { 
+                    params,
+                    timeout: 120000
+                });
+                
+                showPage('solver');
+                displaySolution(res.data, method);
+                showAlert('Solution generated!', 'success');
+            } catch (e) {
+                console.error('Error:', e);
+                showAlert('Failed to solve: ' + (e.response?.data?.detail || e.message), 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function displaySolution(data, method) {
+            const result = data.result || data;
+            const solution = result.improved_solution || result.solution;
+
+            let html = '<div class="card mt-4 border-0 shadow"><div class="card-header bg-white">';
+            html += `<span class="badge bg-${method === 'baseline' ? 'primary' : 'success'} me-2">${method === 'baseline' ? 'Baseline' : 'Self-Improving'}</span>`;
+            if (result.execution_time) {
+                const time = result.execution_time.total || result.execution_time;
+                html += `<span class="text-muted small">⏱ ${time.toFixed(2)}s</span>`;
+            }
+            html += '</div><div class="card-body">';
+
+            if (solution?.steps && solution.steps.length > 0) {
+                html += '<h6 class="mb-3">Solution Steps:</h6>';
+                solution.steps.forEach((s, i) => {
+                    html += `<div class="solution-step"><strong>Step ${i + 1}:</strong> ${s}</div>`;
+                });
+            }
+
+            if (solution?.final_answer !== undefined && solution?.final_answer !== null) {
+                html += `<div class="alert alert-success mt-3 mb-0">
+                    <h5 class="mb-0">📝 Final Answer: <strong>${solution.final_answer}</strong> ${solution.final_unit || ''}</h5>
+                </div>`;
+            }
+
+            if (result.improvement_made !== undefined) {
+                html += `<div class="alert alert-info mt-3">
+                    <strong>Improvement Made:</strong> ${result.improvement_made ? '✅ Yes' : '❌ No'}
+                </div>`;
+            }
+
+            if (result.confidence_score) {
+                const confidence = (result.confidence_score * 100).toFixed(1);
+                html += `<div class="alert alert-info mt-2">
+                    <strong>Confidence:</strong> 
+                    <div class="progress mt-1" style="height: 20px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${confidence}%">${confidence}%</div>
+                    </div>
+                </div>`;
+            }
+
+            if (result.is_correct !== null && result.is_correct !== undefined) {
+                html += `<div class="alert alert-${result.is_correct ? 'success' : 'danger'} mt-2">
+                    <strong>${result.is_correct ? '✅ Correct Answer!' : '❌ Incorrect Answer'}</strong>
+                </div>`;
+            }
+
+            if (result.critique && result.critique.issues_found && result.critique.issues_found.length > 0) {
+                html += '<h6 class="mt-4">Critique & Issues Found:</h6><ul class="list-group">';
+                result.critique.issues_found.forEach(issue => {
+                    html += `<li class="list-group-item list-group-item-warning">
+                        <strong>${issue.type}:</strong> ${issue.description}
+                    </li>`;
+                });
+                html += '</ul>';
+            }
+
+            html += '</div></div>';
+            document.getElementById('solverResult').innerHTML = html;
+        }
+
+        function loadExample(id) {
+            const examples = [
+                "A car accelerates from rest to 20 m/s in 5 seconds. What is its acceleration?",
+                "A 12 V battery is connected to a 4 Ω resistor. What current flows through the circuit?",
+                "Find the derivative of f(x) = 3x² + 5x - 2",
+                "A 10 kg object experiences a net force of 50 N. What is its acceleration?"
+            ];
+            document.getElementById('problemText').value = examples[id - 1];
+            showAlert('Example loaded. Click Solve to get the answer!', 'info');
+        }
+
+        // Run Experiment
+        async function runExperiment() {
+            const name = document.getElementById('experimentName').value.trim();
+            if (!name) { 
+                showAlert('Please enter an experiment name', 'warning'); 
+                return; 
+            }
+
+            const domain = document.getElementById('experimentDomain').value;
+            const difficulty = document.getElementById('experimentDifficulty').value;
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Starting...';
+
+            try {
+                const params = new URLSearchParams();
+                params.append('name', name);
+                if (domain) params.append('domain', domain);
+                if (difficulty) params.append('difficulty', difficulty);
+
+                await axios.post(`${API_BASE}/api/experiments/run`, null, { 
+                    params,
+                    timeout: 30000
+                });
+                
+                showAlert('Experiment started successfully!', 'success');
+                document.getElementById('experimentName').value = '';
+                loadExperiments();
+            } catch (e) {
+                console.error('Error:', e);
+                showAlert('Failed to start experiment: ' + (e.response?.data?.detail || e.message), 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '▶ Run';
+            }
+        }
+
+        // Load Experiments
+        async function loadExperiments() {
+            try {
+                const res = await axios.get(`${API_BASE}/api/experiments`, { timeout: 10000 });
+                const experiments = res.data;
+                
+                if (experiments.length === 0) {
+                    document.getElementById('experimentsTable').innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No experiments yet. Create one above!</td></tr>';
+                    return;
+                }
+
+                document.getElementById('experimentsTable').innerHTML = experiments.map(e => {
+                    const improvement = ((e.improved_accuracy - e.baseline_accuracy) * 100).toFixed(1);
+                    const improvementClass = parseFloat(improvement) > 0 ? 'text-success' : parseFloat(improvement) < 0 ? 'text-danger' : 'text-muted';
+                    const progress = e.total_problems > 0 ? Math.round((e.completed_problems / e.total_problems) * 100) : 0;
+                    
+                    return `<tr>
+                        <td><strong>${e.name}</strong><br><small class="text-muted">${e.description || ''}</small></td>
+                        <td><span class="badge bg-${e.status === 'completed' ? 'success' : e.status === 'running' ? 'info' : 'secondary'}">${e.status}</span></td>
+                        <td>${e.baseline_accuracy !== null ? (e.baseline_accuracy * 100).toFixed(1) : '-'}%</td>
+                        <td>${e.improved_accuracy !== null ? (e.improved_accuracy * 100).toFixed(1) : '-'}%</td>
+                        <td class="${improvementClass}">${e.improved_accuracy !== null ? improvement : '-'}%</td>
+                        <td>
+                            <div class="progress" style="height: 20px; min-width: 100px;">
+                                <div class="progress-bar" role="progressbar" style="width: ${progress}%">${e.completed_problems || 0}/${e.total_problems || 0}</div>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('Error loading experiments:', e);
+                document.getElementById('experimentsTable').innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Failed to load experiments</td></tr>';
+            }
+        }
+
+        // Load Analysis
+        async function loadAnalysis() {
+            try {
+                const res = await axios.get(`${API_BASE}/api/analysis/comparison`, { timeout: 10000 });
+                
+                if (res.data.data) {
+                    const s = res.data.data.summary;
+                    document.getElementById('analysisContent').innerHTML = `
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Experiments</h6>
+                                        <h3 class="display-6">${s.total_experiments}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-primary">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Baseline Accuracy</h6>
+                                        <h3 class="display-6 text-primary">${(s.baseline_accuracy * 100).toFixed(1)}%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-success">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Improved Accuracy</h6>
+                                        <h3 class="display-6 text-success">${(s.improved_accuracy * 100).toFixed(1)}%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 ${s.accuracy_improvement > 0 ? 'border-success' : 'border-warning'}">
+                                    <div class="card-body">
+                                        <h6 class="text-muted">Improvement</h6>
+                                        <h3 class="display-6 ${s.accuracy_improvement > 0 ? 'text-success' : 'text-warning'}">
+                                            ${(s.accuracy_improvement * 100).toFixed(1)}%
+                                        </h3>
+                                        <small class="text-muted">(${s.improvement_percentage.toFixed(1)}% relative gain)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-success">
+                            <h5>📊 Conclusion</h5>
+                            <p class="mb-0">${res.data.data.conclusion}</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Experiment Details</div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead><tr><th>Name</th><th>Baseline</th><th>Improved</th><th>Difference</th></tr></thead>
+                                    <tbody>
+                                        ${res.data.data.experiments.map(e => `
+                                            <tr>
+                                                <td>${e.name}</td>
+                                                <td>${(e.baseline * 100).toFixed(1)}%</td>
+                                                <td>${(e.improved * 100).toFixed(1)}%</td>
+                                                <td class="${e.improvement > 0 ? 'text-success' : 'text-danger'}">
+                                                    ${(e.improvement * 100).toFixed(1)}%
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('analysisContent').innerHTML = `
+                        <div class="alert alert-info text-center py-5">
+                            <h4>📊 No Data Yet</h4>
+                            <p>Run some experiments first to see analysis results.</p>
+                            <button class="btn btn-primary mt-2" onclick="showPage('experiments')">Go to Experiments</button>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Error loading analysis:', e);
+                document.getElementById('analysisContent').innerHTML = '<div class="alert alert-danger">Failed to load analysis</div>';
+            }
+        }
+    </script>
+</body>
+</html>
