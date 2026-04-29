@@ -102,7 +102,7 @@ RUN.bat
 
 **Backend**
 ```bash
-cd C:\Desktop\senior_project
+cd ai-self-improving-solver
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -137,7 +137,7 @@ DEEPSEEK_API_KEY=your_api_key
 GEMINI_API_KEY=your_api_key
 BACKEND_HOST=0.0.0.0
 BACKEND_PORT=8000
-DATABASE_URL=sqlite:///./senior_project.db
+DATABASE_URL=sqlite:///./solver.db
 REACT_APP_API_URL=http://localhost:8000
 ```
 
@@ -153,7 +153,7 @@ MIT License - See LICENSE file
 
 ### 👨‍💻 Author
 
-**Developer**: qwert2009  
+**Developer**: Ambartsumov Vyacheslav  
 **Project**: Senior Capstone Research Project  
 **Year**: 2026
 
@@ -254,7 +254,7 @@ RUN.bat
 
 **Бэкенд**
 ```bash
-cd C:\Desktop\senior_project
+cd ai-self-improving-solver
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -289,7 +289,7 @@ DEEPSEEK_API_KEY=ваш_ключ
 GEMINI_API_KEY=ваш_ключ
 BACKEND_HOST=0.0.0.0
 BACKEND_PORT=8000
-DATABASE_URL=sqlite:///./senior_project.db
+DATABASE_URL=sqlite:///./solver.db
 REACT_APP_API_URL=http://localhost:8000
 ```
 
@@ -305,7 +305,7 @@ MIT Лицензия - Смотрите файл LICENSE
 
 ### 👨‍💻 Автор
 
-**Разработчик**: qwert2009  
+**Разработчик**: Амбарцумов Вячеслав  
 **Проект**: Дипломная работа  
 **Год**: 2026
 
@@ -405,7 +405,7 @@ RUN.bat
 
 **后端**
 ```bash
-cd C:\Desktop\senior_project
+cd ai-self-improving-solver
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
@@ -440,7 +440,7 @@ DEEPSEEK_API_KEY=你的api密钥
 GEMINI_API_KEY=你的api密钥
 BACKEND_HOST=0.0.0.0
 BACKEND_PORT=8000
-DATABASE_URL=sqlite:///./senior_project.db
+DATABASE_URL=sqlite:///./solver.db
 REACT_APP_API_URL=http://localhost:8000
 ```
 
@@ -456,7 +456,7 @@ MIT许可证 - 查看LICENSE文件
 
 ### 👨‍💻 作者
 
-**开发者**: qwert2009  
+**开发者**: Ambartsumov Vyacheslav  
 **项目**: 毕业设计  
 **年份**: 2026
 
@@ -464,7 +464,7 @@ MIT许可证 - 查看LICENSE文件
 
 <div align="center">
 
-**Made with ❤️ by qwert2009**
+**Made with ❤️ by Ambartsumov Vyacheslav**
 
 [⬆ Back to top](#self-improving-ai-system-for-engineering-problem-solving)
 
