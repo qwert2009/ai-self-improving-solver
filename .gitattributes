@@ -1,0 +1,5 @@
+# Force GitHub to detect primary language as Python
+*.js linguist-language=Python
+*.jsx linguist-language=Python
+*.ts linguist-language=Python
+*.tsx linguist-language=Python
